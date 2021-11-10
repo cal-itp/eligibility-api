@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile.dev
+    entrypoint: []
+    command: sleep infinity
+    image: eligibility_api:dev
+    volumes:
+      - ./:/home/calitp/app
+  # docs:
+  #   image: eligibility_api:dev
+  #   entrypoint: mkdocs
+  #   command: serve --dev-addr "0.0.0.0:8000"
+  #   ports:
+  #     - "8000"
+  #   volumes:
+  #     - ./:/home/calitp/app:cached
