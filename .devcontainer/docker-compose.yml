@@ -4,12 +4,12 @@ services:
   dev:
     build:
       context: .
-      dockerfile: .devcontainer/Dockerfile
+      dockerfile: Dockerfile
     entrypoint: []
     command: sleep infinity
     image: eligibility_api:dev
     volumes:
-      - ./:/home/calitp/app
+      - ../:/home/calitp/src
   # docs:
   #   image: eligibility_api:dev
   #   entrypoint: mkdocs
@@ -17,4 +17,4 @@ services:
   #   ports:
   #     - "8000"
   #   volumes:
-  #     - ./:/home/calitp/app:cached
+  #     - ../:/home/calitp/src:cached
