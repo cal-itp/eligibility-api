@@ -25,8 +25,11 @@ docker compose up docs
 ```
 
 The site is served from `http://localhost` at a port dynamically assigned by Docker. See
-[Docker dynamic ports](./docker-dynamic-ports.md) for more information.
+[Docker dynamic ports][docker-dynamic-ports] for more information.
 
 The website is automatically rebuilt as changes are made to `docs/` files.
 
-Read more on how to run the docs [here](https://docs.calitp.org/benefits/getting-started/documentation/).
+Read more on how to run the docs [here][benefits-docs].
+
+[benefits-docs]: https://docs.calitp.org/benefits/getting-started/documentation/
+[docker-dynamic-ports]: https://docs.calitp.org/benefits/getting-started/docker-dynamic-ports
