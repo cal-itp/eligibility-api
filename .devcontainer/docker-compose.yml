@@ -17,4 +17,4 @@ services:
     ports:
       - "8000"
     volumes:
-      - ../:/home/calitp/src
+      - ../:/home/calitp/src:cached
