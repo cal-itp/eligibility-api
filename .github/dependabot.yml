@@ -25,4 +25,3 @@ updates:
       include: "scope"
     labels:
       - "dependencies"
-
