@@ -3,18 +3,18 @@ version: "3.8"
 services:
   dev:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
     entrypoint: []
     command: sleep infinity
     image: eligibility_api:dev
     volumes:
       - ../:/home/calitp/src
-  # docs:
-  #   image: eligibility_api:dev
-  #   entrypoint: mkdocs
-  #   command: serve --dev-addr "0.0.0.0:8000"
-  #   ports:
-  #     - "8000"
-  #   volumes:
-  #     - ../:/home/calitp/src:cached
+  docs:
+    image: eligibility_api:dev
+    entrypoint: mkdocs
+    command: serve --dev-addr "0.0.0.0:8000"
+    ports:
+      - "8000"
+    volumes:
+      - ../:/home/calitp/src:cached
