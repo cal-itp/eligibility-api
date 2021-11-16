@@ -2,7 +2,7 @@
     "name": "cal-itp/eligibility-api",
     "dockerComposeFile": ["./docker-compose.yml"],
     "service": "dev",
-    "runServices": ["dev"],
+    "runServices": ["dev", "docs"],
     "workspaceFolder": "/home/calitp/src",
     "postStartCommand": [
         "/bin/bash",
