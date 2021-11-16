@@ -19,3 +19,7 @@ RUN python -m pip install --upgrade pip && \
 
 # enter src directory
 WORKDIR /home/$USER/src
+
+# install docs tooling:
+COPY docs/requirements.txt docs/requirements.txt
+RUN pip install --no-cache-dir -r docs/requirements.txt
