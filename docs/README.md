@@ -10,7 +10,7 @@ This document outlines the requirements for data exchange to verify one or more 
 * An **API Server** holds information enabling fulfillment of an eligibility verification transaction. The Server sends
   [Responses](#response)
 
-Under these definitions, the [`benefits`](https://docs.calitp.org/benefits) application acts as the Client and communicates with this application, the Eligibility Server.
+Under these definitions, the [`benefits`](https://docs.calitp.org/benefits) application acts as the Client and communicates with the Server, the [`eligibility-server`](https://docs.calitp.org/eligibility-server) application.
 
 ### Authentication/Authorization
 
