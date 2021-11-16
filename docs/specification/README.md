@@ -56,7 +56,7 @@ Below is a description of the HTTP request and response, and request and respons
 
 **All fields are required.** Fields names marked with ***** are Registered claims defined by the JWT specification.
 
-Complete example transactions can be found on [another page](example-transactions.md).
+Complete example transactions can be found on [another page](examples.md).
 
 ### Header
 
