@@ -15,7 +15,7 @@ USER $USER
 ENV PATH "$PATH:/home/$USER/.local/bin"
 
 RUN python -m pip install --upgrade pip && \
-    pip install pre-commit
+    pip install black flake8 pre-commit
 
 # enter src directory
 WORKDIR /home/$USER/src
