@@ -22,47 +22,101 @@ class TokenError(Exception):
     pass
 
 
+class SigningConfig:
+    """Values needed for signing JWT payload."""
+
+    def __init__(self, jws_signing_alg, private_jwk):
+        self.jws_signing_alg = jws_signing_alg
+        self.private_jwk = private_jwk
+
+
+class EncryptionConfig:
+    """Values needed for encrypting JWS."""
+
+    def __init__(self, jwe_encryption_alg, jwe_cek_enc, public_jwk):
+        self.jwe_encryption_alg = jwe_encryption_alg
+        self.jwe_cek_enc = jwe_cek_enc
+        self.public_jwk = public_jwk
+
+
+class PayloadData:
+    """All the other values needed in the payload that aren't related to signing or encrypting.
+
+    `sub` and `name` are not included here, but rather passed in as parameters to Client.verify.
+    """
+
+    def __init__(self, agency_id, types, issuer):
+        self.agency_id = agency_id
+        self.types = types
+        self.issuer = issuer
+
+
+class VerifierConfig:
+    """Values needed to make the request to the eligibility server."""
+
+    def __init__(self, api_url, api_auth_header, api_auth_key):
+        self.api_url = api_url
+        self.api_auth_header = api_auth_header
+        self.api_auth_key = api_auth_key
+
+
 class RequestToken:
     """Eligibility Verification API request token."""
 
-    def __init__(self, agency, verifier, sub, name, issuer):
+    def __init__(
+        self,
+        signing_config: SigningConfig,
+        payload_data: PayloadData,
+        encryption_config: EncryptionConfig,
+        sub,
+        name,
+    ):
         logger.info("Initialize new request token")
 
-        # send the eligibility type names
-        types = list(map(lambda t: t.name, agency.types_to_verify()))
+        logger.debug("Sign token payload with agency's private key")
+        signed_payload = self._sign_jwt(signing_config, payload_data, sub, name)
 
+        logger.info("Signed and encrypted request token initialized")
+        self._jwe = self._encrypt_jws(encryption_config, signed_payload)
+
+    def _sign_jwt(
+        self, signing_config: SigningConfig, payload_data: PayloadData, sub, name
+    ):
+        """Puts header, claims, and signature into a Signed JWT (JWS)"""
         # craft the main token payload
         payload = dict(
             jti=str(uuid.uuid4()),
-            iss=issuer,
+            iss=payload_data.issuer,
             iat=int(
                 datetime.datetime.utcnow()
                 .replace(tzinfo=datetime.timezone.utc)
                 .timestamp()
             ),
-            agency=agency.agency_id,
-            eligibility=types,
+            agency=payload_data.agency_id,
+            eligibility=payload_data.types,
             sub=sub,
             name=name,
         )
 
-        logger.debug("Sign token payload with agency's private key")
-        header = {"typ": "JWS", "alg": agency.jws_signing_alg}
+        header = {"typ": "JWS", "alg": signing_config.jws_signing_alg}
         signed_token = jwt.JWT(header=header, claims=payload)
-        signed_token.make_signed_token(agency.private_jwk)
+        signed_token.make_signed_token(signing_config.private_jwk)
         signed_payload = signed_token.serialize()
 
+        return signed_payload
+
+    def _encrypt_jws(self, encryption_config: EncryptionConfig, signed_payload):
+        """Encrypt signed payload using a public key"""
         logger.debug("Encrypt signed token payload with verifier's public key")
         header = {
             "typ": "JWE",
-            "alg": verifier.jwe_encryption_alg,
-            "enc": verifier.jwe_cek_enc,
+            "alg": encryption_config.jwe_encryption_alg,
+            "enc": encryption_config.jwe_cek_enc,
         }
         encrypted_token = jwt.JWT(header=header, claims=signed_payload)
-        encrypted_token.make_encrypted_token(verifier.public_jwk)
+        encrypted_token.make_encrypted_token(encryption_config.public_jwk)
 
-        logger.info("Signed and encrypted request token initialized")
-        self._jwe = encrypted_token
+        return encrypted_token
 
     def __repr__(self):
         return str(self)
@@ -74,9 +128,33 @@ class RequestToken:
 class ResponseToken:
     """Eligibility Verification API response token."""
 
-    def __init__(self, response, agency, verifier):
+    def __init__(
+        self,
+        response,
+        signing_config: SigningConfig,
+        encryption_config: EncryptionConfig,
+    ):
         logger.info("Read encrypted token from response")
+        encrypted_signed_token = self._get_encrypted_token(response)
 
+        logger.debug("Decrypt response token using agency's private key")
+        decrypted_payload = self._decrypt_response(
+            encrypted_signed_token, encryption_config, signing_config.private_jwk
+        )
+
+        logger.debug(
+            "Verify decrypted response token's signature using verifier's public key"
+        )
+        payload = self._verify_signature(
+            decrypted_payload,
+            signing_config.jws_signing_alg,
+            encryption_config.public_jwk,
+        )
+
+        self.eligibility = list(payload.get("eligibility", []))
+        self.error = payload.get("error", None)
+
+    def _get_encrypted_token(self, response):
         try:
             encrypted_signed_token = response.text
             if not encrypted_signed_token:
@@ -86,11 +164,18 @@ class ResponseToken:
         except ValueError:
             raise TokenError("Invalid response format")
 
-        logger.debug("Decrypt response token using agency's private key")
-        allowed_algs = [verifier.jwe_encryption_alg, verifier.jwe_cek_enc]
+        return encrypted_signed_token
+
+    def _decrypt_response(
+        self, encrypted_signed_token, encryption_config: EncryptionConfig, private_jwk
+    ):
+        allowed_algs = [
+            encryption_config.jwe_encryption_alg,
+            encryption_config.jwe_cek_enc,
+        ]
         decrypted_token = jwe.JWE(algs=allowed_algs)
         try:
-            decrypted_token.deserialize(encrypted_signed_token, key=agency.private_jwk)
+            decrypted_token.deserialize(encrypted_signed_token, key=private_jwk)
         except jwe.InvalidJWEData:
             raise TokenError("Invalid JWE token")
         except jwe.InvalidJWEOperation:
@@ -98,13 +183,15 @@ class ResponseToken:
 
         decrypted_payload = str(decrypted_token.payload, "utf-8")
 
-        logger.debug(
-            "Verify decrypted response token's signature using verifier's public key"
-        )
+        return decrypted_payload
+
+    def _verify_signature(self, decrypted_payload, jws_signing_alg, public_jwk):
         signed_token = jws.JWS()
         try:
             signed_token.deserialize(
-                decrypted_payload, key=verifier.public_jwk, alg=agency.jws_signing_alg
+                decrypted_payload,
+                key=public_jwk,
+                alg=jws_signing_alg,
             )
         except jws.InvalidJWSObject:
             raise TokenError("Invalid JWS token")
@@ -114,28 +201,36 @@ class ResponseToken:
         logger.info("Response token decrypted and signature verified")
 
         payload = json.loads(str(signed_token.payload, "utf-8"))
-        self.eligibility = list(payload.get("eligibility", []))
-        self.error = payload.get("error", None)
+
+        return payload
 
 
 class Client:
     """Eligibility Verification API HTTP client."""
 
-    def __init__(self, agency, issuer):
-        logger.debug(f"Initialize client for agency: {agency.short_name}")
-        self.agency = agency
-        self.verifier = agency.eligibility_verifier
-        self.issuer = issuer
+    def __init__(
+        self,
+        signing_config: SigningConfig,
+        payload_data: PayloadData,
+        encryption_config: EncryptionConfig,
+        verifier: VerifierConfig,
+    ):
+        self.signing_config = signing_config
+        self.payload_data = payload_data
+        self.encryption_config = encryption_config
+        self.verifier = verifier
 
     def _tokenize_request(self, sub, name):
         """Create a request token."""
-        return RequestToken(self.agency, self.verifier, sub, name, self.issuer)
+        return RequestToken(
+            self.signing_config, self.payload_data, self.encryption_config, sub, name
+        )
 
     def _tokenize_response(self, response):
         """Parse a response token."""
-        return ResponseToken(response, self.agency, self.verifier)
+        return ResponseToken(response, self.signing_config, self.encryption_config)
 
-    def _auth_headers(self, token):
+    def _auth_headers(self, token: RequestToken):
         """Create headers for the request with the token and verifier API keys"""
         headers = dict(Authorization=f"Bearer {token}")
         headers[self.verifier.api_auth_header] = self.verifier.api_auth_key
