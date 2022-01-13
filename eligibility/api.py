@@ -4,7 +4,7 @@ import logging
 import uuid
 import requests
 
-from jwcrypto import common as jwcrypto, jwe, jws, jwt
+from jwcrypto import common as jwcrypto, jwe, jws, jwt, jwk
 
 
 logger = logging.getLogger(__name__)
@@ -22,21 +22,29 @@ class TokenError(Exception):
     pass
 
 
+class JWK:
+    @classmethod
+    def from_pem(cls, data, password=None):
+        obj = cls()
+        obj.key = jwk.JWK.from_pem(data, password)
+        return obj
+
+
 class SigningConfig:
     """Values needed for signing JWT payload."""
 
-    def __init__(self, jws_signing_alg, private_jwk):
+    def __init__(self, jws_signing_alg, private_jwk: JWK):
         self.jws_signing_alg = jws_signing_alg
-        self.private_jwk = private_jwk
+        self.private_jwk = private_jwk.key
 
 
 class EncryptionConfig:
     """Values needed for encrypting JWS."""
 
-    def __init__(self, jwe_encryption_alg, jwe_cek_enc, public_jwk):
+    def __init__(self, jwe_encryption_alg, jwe_cek_enc, public_jwk: JWK):
         self.jwe_encryption_alg = jwe_encryption_alg
         self.jwe_cek_enc = jwe_cek_enc
-        self.public_jwk = public_jwk
+        self.public_jwk = public_jwk.key
 
 
 class PayloadData:
