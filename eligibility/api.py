@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import datetime
 import json
 import logging
@@ -47,25 +48,24 @@ class EncryptionConfig:
         self.public_jwk = public_jwk.key
 
 
+@dataclass
 class PayloadData:
-    """All the other values needed in the payload that aren't related to signing or encrypting.
+    """All the other values needed in the payload that aren't related to signing or encrypting."""
 
-    `sub` and `name` are not included here, but rather passed in as parameters to Client.verify.
-    """
-
-    def __init__(self, agency_id, types, issuer):
-        self.agency_id = agency_id
-        self.types = types
-        self.issuer = issuer
+    agency_id: str
+    types: list[str]
+    issuer: str
+    sub: str
+    name: str
 
 
+@dataclass
 class VerifierConfig:
     """Values needed to make the request to the eligibility server."""
 
-    def __init__(self, api_url, api_auth_header, api_auth_key):
-        self.api_url = api_url
-        self.api_auth_header = api_auth_header
-        self.api_auth_key = api_auth_key
+    api_url: str
+    api_auth_header: str
+    api_auth_key: str
 
 
 class RequestToken:
@@ -76,20 +76,16 @@ class RequestToken:
         signing_config: SigningConfig,
         payload_data: PayloadData,
         encryption_config: EncryptionConfig,
-        sub,
-        name,
     ):
         logger.info("Initialize new request token")
 
         logger.debug("Sign token payload with agency's private key")
-        signed_payload = self._sign_jwt(signing_config, payload_data, sub, name)
+        signed_payload = self._sign_jwt(signing_config, payload_data)
 
         logger.info("Signed and encrypted request token initialized")
         self._jwe = self._encrypt_jws(encryption_config, signed_payload)
 
-    def _sign_jwt(
-        self, signing_config: SigningConfig, payload_data: PayloadData, sub, name
-    ):
+    def _sign_jwt(self, signing_config: SigningConfig, payload_data: PayloadData):
         """Puts header, claims, and signature into a Signed JWT (JWS)"""
         # craft the main token payload
         payload = dict(
@@ -102,8 +98,8 @@ class RequestToken:
             ),
             agency=payload_data.agency_id,
             eligibility=payload_data.types,
-            sub=sub,
-            name=name,
+            sub=payload_data.sub,
+            name=payload_data.name,
         )
 
         header = {"typ": "JWS", "alg": signing_config.jws_signing_alg}
@@ -219,20 +215,16 @@ class Client:
     def __init__(
         self,
         signing_config: SigningConfig,
-        payload_data: PayloadData,
         encryption_config: EncryptionConfig,
         verifier: VerifierConfig,
     ):
         self.signing_config = signing_config
-        self.payload_data = payload_data
         self.encryption_config = encryption_config
         self.verifier = verifier
 
-    def _tokenize_request(self, sub, name):
+    def _tokenize_request(self, payload_data):
         """Create a request token."""
-        return RequestToken(
-            self.signing_config, self.payload_data, self.encryption_config, sub, name
-        )
+        return RequestToken(self.signing_config, payload_data, self.encryption_config)
 
     def _tokenize_response(self, response):
         """Parse a response token."""
@@ -244,12 +236,12 @@ class Client:
         headers[self.verifier.api_auth_header] = self.verifier.api_auth_key
         return headers
 
-    def _request(self, sub, name):
+    def _request(self, payload_data):
         """Make an API request for eligibility verification."""
         logger.debug("Start new eligibility verification request")
 
         try:
-            token = self._tokenize_request(sub, name)
+            token = self._tokenize_request(payload_data)
         except jwcrypto.JWException:
             raise TokenError("Failed to tokenize form values")
 
@@ -275,6 +267,6 @@ class Client:
             )
             raise ApiError("Unexpected eligibility verification response")
 
-    def verify(self, sub, name):
+    def verify(self, payload_data: PayloadData) -> ResponseToken:
         """Check eligibility for the subject and name."""
-        return self._request(sub, name)
+        return self._request(payload_data)
