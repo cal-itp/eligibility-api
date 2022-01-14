@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field, asdict
 import datetime
 import json
 import logging
@@ -52,11 +52,22 @@ class EncryptionConfig:
 class RequestPayload:
     """All the other values needed in the request payload that aren't related to signing or encrypting."""
 
+    jti: str = field(init=False)
+    iss: str = field(init=False)
+    iat: int = field(init=False)
     agency_id: str
-    types: list[str]
-    issuer: str
+    eligibility: list[str]
     sub: str
     name: str
+
+    def __post_init__(self):
+        self.jti = str(uuid.uuid4())
+        self.iat = int(
+            datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).timestamp()
+        )
+
+    def to_dict(self):
+        return asdict(self)
 
     @classmethod
     def from_token(
@@ -97,6 +108,9 @@ class ResponsePayload:
 
     eligibility: list[str]
     error: dict
+
+    def to_dict(self):
+        return asdict(self)
 
     @classmethod
     def from_response(
@@ -214,22 +228,10 @@ class RequestToken:
 
     def _sign_jwt(self, signing_config: SigningConfig, request_payload: RequestPayload):
         """Puts header, claims, and signature into a Signed JWT (JWS)"""
-        # craft the main token payload
-        payload = dict(
-            jti=str(uuid.uuid4()),
-            iss=request_payload.issuer,
-            iat=int(
-                datetime.datetime.utcnow()
-                .replace(tzinfo=datetime.timezone.utc)
-                .timestamp()
-            ),
-            agency=request_payload.agency_id,
-            eligibility=request_payload.types,
-            sub=request_payload.sub,
-            name=request_payload.name,
-        )
 
         header = {"typ": "JWS", "alg": signing_config.jws_signing_alg}
+        payload = request_payload.to_dict()
+
         signed_token = jwt.JWT(header=header, claims=payload)
         signed_token.make_signed_token(signing_config.private_jwk)
         signed_payload = signed_token.serialize()
