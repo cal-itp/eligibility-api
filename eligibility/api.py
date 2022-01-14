@@ -61,34 +61,9 @@ class Payload(ABC):
         pass
 
     @abstractclassmethod
-    def from_token(
-        cls,
-        token: str,
-        signing_config: SigningConfig,
-        encryption_config: EncryptionConfig,
-    ):
+    def from_json(cls, json_payload: str):
         pass
 
-
-@dataclass
-class RequestPayload(Payload):
-    """All the other values needed in the request payload that aren't related to signing or encrypting."""
-
-    jti: str = field(init=False)
-    iss: str
-    iat: int = field(init=False)
-    agency_id: str
-    eligibility: list[str]
-    sub: str
-    name: str
-
-    def __post_init__(self):
-        self.jti = str(uuid.uuid4())
-        self.iat = _create_iat()
-
-    def to_dict(self):
-        return asdict(self)
-
     @classmethod
     def from_token(
         cls,
@@ -96,101 +71,27 @@ class RequestPayload(Payload):
         signing_config: SigningConfig,
         encryption_config: EncryptionConfig,
     ):
-        # decrypt
-        decrypted_token = jwe.JWE(
-            algs=[encryption_config.jwe_encryption_alg, encryption_config.jwe_cek_enc]
-        )
-        decrypted_token.deserialize(token, key=signing_config.private_jwk)
-        decrypted_payload = str(decrypted_token.payload, "utf-8")
-
-        # verify signature
-        signed_token = jws.JWS()
-        signed_token.deserialize(
-            decrypted_payload,
-            key=encryption_config.public_jwk,
-            alg=signing_config.jws_signing_alg,
-        )
-
-        payload = json.loads(signed_token.payload, "utf-8")
-
-        return cls(
-            payload["agency_id"],
-            payload["eligibility"],
-            payload["iss"],
-            payload["sub"],
-            payload["name"],
-        )
-
-
-@dataclass
-class ResponsePayload:
-    """All the other values needed in the response payload that aren't related to signing or encrypting."""
-
-    jti: str  # Needs to match the one from the request
-    iss: str
-    iat: int = field(default_factory=_create_iat)
-    eligibility: list[str] = field(default_factory=list)
-    error: dict = None
-
-    def to_dict(self):
-        return asdict(self)
-
-    @classmethod
-    def from_response(
-        cls,
-        response,
-        signing_config: SigningConfig,
-        encryption_config: EncryptionConfig,
-    ):
-        logger.info("Read encrypted token from response")
-        encrypted_signed_token = cls._get_encrypted_token(response)
-        return cls.from_token(encrypted_signed_token, signing_config, encryption_config)
-
-    @classmethod
-    def from_token(
-        cls,
-        token: str,
-        signing_config: SigningConfig,
-        encryption_config: EncryptionConfig,
-    ):
-
-        logger.debug("Decrypt response token using agency's private key")
+        logger.debug("Decrypt response token using private key")
         decrypted_payload = cls._decrypt_token(
             token, encryption_config, signing_config.private_jwk
         )
 
-        logger.debug(
-            "Verify decrypted response token's signature using verifier's public key"
-        )
+        logger.debug("Verify decrypted response token's signature using public key")
         signed_token = cls._verify_signature(
             decrypted_payload, signing_config, encryption_config
         )
 
         payload = json.loads(str(signed_token.payload, "utf-8"))
 
-        jti = payload["jti"]
-        iss = payload["iss"]
-        iat = payload["iat"]
-        eligibility = list(payload.get("eligibility", []))
-        error = payload.get("error", None)
-
-        return cls(jti, iss, iat, eligibility, error)
+        return cls.from_json(payload)
 
     @classmethod
-    def _get_encrypted_token(cls, response):
-        try:
-            encrypted_signed_token = response.text
-            if not encrypted_signed_token:
-                raise ValueError()
-            # strip extra spaces and wrapping quote chars
-            encrypted_signed_token = encrypted_signed_token.strip("'\n\"")
-        except ValueError:
-            raise TokenError("Invalid response format")
-
-        return encrypted_signed_token
-
-    @classmethod
-    def _decrypt_token(cls, encrypted_signed_token, encryption_config, private_jwk):
+    def _decrypt_token(
+        cls,
+        encrypted_signed_token: str,
+        encryption_config: EncryptionConfig,
+        private_jwk: JWK,
+    ):
         allowed_algs = [
             encryption_config.jwe_encryption_alg,
             encryption_config.jwe_cek_enc,
@@ -224,6 +125,84 @@ class ResponsePayload:
         logger.info("Response token decrypted and signature verified")
 
         return signed_token
+
+
+@dataclass
+class RequestPayload(Payload):
+    """All the other values needed in the request payload that aren't related to signing or encrypting."""
+
+    jti: str = field(init=False)
+    iss: str
+    iat: int = field(init=False)
+    agency_id: str
+    eligibility: list[str]
+    sub: str
+    name: str
+
+    def __post_init__(self):
+        self.jti = str(uuid.uuid4())
+        self.iat = _create_iat()
+
+    def to_dict(self):
+        return asdict(self)
+
+    @classmethod
+    def from_json(cls, json_payload: str):
+        return cls(
+            json_payload["agency_id"],
+            json_payload["eligibility"],
+            json_payload["iss"],
+            json_payload["sub"],
+            json_payload["name"],
+        )
+
+
+@dataclass
+class ResponsePayload(Payload):
+    """All the other values needed in the response payload that aren't related to signing or encrypting."""
+
+    jti: str  # Needs to match the one from the request
+    iss: str
+    iat: int = field(default_factory=_create_iat)
+    eligibility: list[str] = field(default_factory=list)
+    error: dict = None
+
+    def to_dict(self):
+        return asdict(self)
+
+    @classmethod
+    def from_response(
+        cls,
+        response,
+        signing_config: SigningConfig,
+        encryption_config: EncryptionConfig,
+    ):
+        logger.info("Read encrypted token from response")
+        encrypted_signed_token = cls._get_encrypted_token(response)
+        return cls.from_token(encrypted_signed_token, signing_config, encryption_config)
+
+    @classmethod
+    def _get_encrypted_token(cls, response):
+        try:
+            encrypted_signed_token = response.text
+            if not encrypted_signed_token:
+                raise ValueError()
+            # strip extra spaces and wrapping quote chars
+            encrypted_signed_token = encrypted_signed_token.strip("'\n\"")
+        except ValueError:
+            raise TokenError("Invalid response format")
+
+        return encrypted_signed_token
+
+    @classmethod
+    def from_json(cls, json_payload: str):
+        jti = json_payload["jti"]
+        iss = json_payload["iss"]
+        iat = json_payload["iat"]
+        eligibility = list(json_payload.get("eligibility", []))
+        error = json_payload.get("error", None)
+
+        return cls(jti, iss, iat, eligibility, error)
 
 
 @dataclass
@@ -303,7 +282,7 @@ class Client:
 
     def _parse_response(self, response):
         """Parse a response token."""
-        return ResponsePayload.from_token(
+        return ResponsePayload.from_response(
             response, self.signing_config, self.encryption_config
         )
 
