@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod, abstractclassmethod
 from dataclasses import dataclass, field, asdict
 import datetime
 import json
@@ -9,6 +10,12 @@ from jwcrypto import common as jwcrypto, jwe, jws, jwt, jwk
 
 
 logger = logging.getLogger(__name__)
+
+
+def _create_iat() -> int:
+    return int(
+        datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).timestamp()
+    )
 
 
 class ApiError(Exception):
@@ -48,12 +55,27 @@ class EncryptionConfig:
         self.public_jwk = public_jwk.key
 
 
+class Payload(ABC):
+    @abstractmethod
+    def to_dict(self):
+        pass
+
+    @abstractclassmethod
+    def from_token(
+        cls,
+        token: str,
+        signing_config: SigningConfig,
+        encryption_config: EncryptionConfig,
+    ):
+        pass
+
+
 @dataclass
-class RequestPayload:
+class RequestPayload(Payload):
     """All the other values needed in the request payload that aren't related to signing or encrypting."""
 
     jti: str = field(init=False)
-    iss: str = field(init=False)
+    iss: str
     iat: int = field(init=False)
     agency_id: str
     eligibility: list[str]
@@ -62,9 +84,7 @@ class RequestPayload:
 
     def __post_init__(self):
         self.jti = str(uuid.uuid4())
-        self.iat = int(
-            datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).timestamp()
-        )
+        self.iat = _create_iat()
 
     def to_dict(self):
         return asdict(self)
@@ -106,8 +126,11 @@ class RequestPayload:
 class ResponsePayload:
     """All the other values needed in the response payload that aren't related to signing or encrypting."""
 
-    eligibility: list[str]
-    error: dict
+    jti: str  # Needs to match the one from the request
+    iss: str
+    iat: int = field(default_factory=_create_iat)
+    eligibility: list[str] = field(default_factory=list)
+    error: dict = None
 
     def to_dict(self):
         return asdict(self)
@@ -145,10 +168,13 @@ class ResponsePayload:
 
         payload = json.loads(str(signed_token.payload, "utf-8"))
 
+        jti = payload["jti"]
+        iss = payload["iss"]
+        iat = payload["iat"]
         eligibility = list(payload.get("eligibility", []))
         error = payload.get("error", None)
 
-        return ResponsePayload(eligibility, error)
+        return cls(jti, iss, iat, eligibility, error)
 
     @classmethod
     def _get_encrypted_token(cls, response):
@@ -209,28 +235,28 @@ class VerifierConfig:
     api_auth_key: str
 
 
-class RequestToken:
-    """Eligibility Verification API request token."""
+class Token:
+    """Eligibility Verification API request/response token."""
 
     def __init__(
         self,
-        request_payload: RequestPayload,
+        payload: Payload,
         signing_config: SigningConfig,
         encryption_config: EncryptionConfig,
     ):
-        logger.info("Initialize new request token")
+        logger.info("Initialize new token")
 
         logger.debug("Sign token payload with agency's private key")
-        signed_payload = self._sign_jwt(signing_config, request_payload)
+        signed_payload = self._sign_jwt(signing_config, payload)
 
         logger.info("Signed and encrypted request token initialized")
         self._jwe = self._encrypt_jws(encryption_config, signed_payload)
 
-    def _sign_jwt(self, signing_config: SigningConfig, request_payload: RequestPayload):
+    def _sign_jwt(self, signing_config: SigningConfig, payload: Payload):
         """Puts header, claims, and signature into a Signed JWT (JWS)"""
 
         header = {"typ": "JWS", "alg": signing_config.jws_signing_alg}
-        payload = request_payload.to_dict()
+        payload = payload.to_dict()
 
         signed_token = jwt.JWT(header=header, claims=payload)
         signed_token.make_signed_token(signing_config.private_jwk)
@@ -258,18 +284,6 @@ class RequestToken:
         return self._jwe.serialize()
 
 
-class ResponseToken:
-    """Eligibility Verification API response token."""
-
-    def __init__(
-        self,
-        response_payload: ResponsePayload,
-        signing_config: SigningConfig,
-        encryption_config: EncryptionConfig,
-    ):
-        pass
-
-
 class Client:
     """Eligibility Verification API HTTP client."""
 
@@ -285,9 +299,7 @@ class Client:
 
     def _tokenize_request(self, request_payload):
         """Create a request token."""
-        return RequestToken(
-            request_payload, self.signing_config, self.encryption_config
-        )
+        return Token(request_payload, self.signing_config, self.encryption_config)
 
     def _parse_response(self, response):
         """Parse a response token."""
@@ -295,7 +307,7 @@ class Client:
             response, self.signing_config, self.encryption_config
         )
 
-    def _auth_headers(self, token: RequestToken):
+    def _auth_headers(self, token: Token):
         """Create headers for the request with the token and verifier API keys"""
         headers = dict(Authorization=f"Bearer {token}")
         headers[self.verifier.api_auth_header] = self.verifier.api_auth_key
