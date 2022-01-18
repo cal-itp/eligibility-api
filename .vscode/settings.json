@@ -6,7 +6,12 @@
     "files.trimFinalNewlines": true,
     "files.trimTrailingWhitespace": true,
     "python.formatting.provider": "black",
+    "python.languageServer": "Pylance",
     "python.linting.enabled": true,
     "python.linting.flake8Enabled": true,
-    "python.languageServer": "Pylance",
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.testing.pytestEnabled": true,
+    "python.testing.unittestEnabled": false,
 }

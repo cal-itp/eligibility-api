@@ -37,6 +37,12 @@ class JWK:
         obj.key = jwk.JWK.from_pem(data, password)
         return obj
 
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return str(self.key)
+
 
 class SigningConfig:
     """Values needed for signing JWT payload."""
@@ -149,9 +155,9 @@ class RequestPayload(Payload):
     @classmethod
     def from_json(cls, json_payload: str):
         return cls(
+            json_payload["iss"],
             json_payload["agency_id"],
             json_payload["eligibility"],
-            json_payload["iss"],
             json_payload["sub"],
             json_payload["name"],
         )
