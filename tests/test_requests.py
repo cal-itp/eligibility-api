@@ -2,31 +2,19 @@ import pytest
 import uuid
 from jwcrypto import jws
 
+from tests.valid_objects import (
+    valid_signing_config,
+    valid_encryption_config,
+    valid_request_payload,
+)
+
 from eligibility import api
-
-
-def valid_payload():
-    return api.RequestPayload(
-        iss="localhost",
-        agency_id="abc",
-        eligibility=["type1"],
-        sub="A1234567",
-        name="Garcia",
-    )
-
-
-def valid_signing_config(private_jwk):
-    return api.SigningConfig("RS256", private_jwk)
-
-
-def valid_encryption_config(public_jwk):
-    return api.EncryptionConfig("RSA-OAEP", "A256CBC-HS512", public_jwk)
 
 
 def test_payload_generated_values():
     """Tests that generated values in RequestPayload are as expected."""
     # Given/When
-    payload = valid_payload()
+    payload = valid_request_payload()
     # Then
     assert uuid.UUID(payload.jti) is not None
     assert payload.iat is not None and type(payload.iat) == int
@@ -35,7 +23,7 @@ def test_payload_generated_values():
 def test_create_valid_token(client_private_jwk, server_public_jwk):
     """Tests that a valid RequestPayload and valid configs can create a valid Token."""
     # Given
-    payload = valid_payload()
+    payload = valid_request_payload()
     signing_config = valid_signing_config(client_private_jwk)
     encryption_config = valid_encryption_config(server_public_jwk)
 
@@ -54,7 +42,7 @@ def test_valid_token_to_payload(
     """
     # Given
     token = api.Token(
-        valid_payload(),
+        valid_request_payload(),
         valid_signing_config(client_private_jwk),
         valid_encryption_config(server_public_jwk),
     )
@@ -69,7 +57,7 @@ def test_valid_token_to_payload(
     )
 
     # Then
-    expected = valid_payload()
+    expected = valid_request_payload()
 
     # ignore jti and iat fields since they are generated
     parsed_payload.jti = ""
@@ -88,7 +76,7 @@ def test_invalid_signing_config_raises_exception(client_private_jwk, server_publ
 
         # When
         api.Token(
-            valid_payload(),
+            valid_request_payload(),
             invalid_signing_config,
             valid_encryption_config(server_public_jwk),
         )
