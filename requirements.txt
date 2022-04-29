@@ -1,2 +1,2 @@
-jwcrypto==1.0
+jwcrypto==1.2
 requests==2.27.1
