@@ -139,11 +139,10 @@ class ResponseToken:
 class Client:
     """Eligibility Verification API HTTP client."""
 
-    def __init__(self, agency, issuer):
+    def __init__(self, agency, verifier, issuer):
         logger.debug(f"Initialize client for agency: {agency.short_name}")
         self.issuer = issuer
 
-        verifier = agency.eligibility_verifier
         # get the eligibility type names
         self.types = list(map(lambda t: t.name, agency.types_to_verify()))
         self.agency_id = agency.agency_id
