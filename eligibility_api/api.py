@@ -144,7 +144,7 @@ class Client:
         self.issuer = issuer
 
         # get the eligibility type names
-        self.types = list(map(lambda t: t.name, agency.types_to_verify()))
+        self.types = list(map(lambda t: t.name, agency.types_to_verify(verifier)))
         self.agency_id = agency.agency_id
         self.jws_signing_alg = agency.jws_signing_alg
         self.client_private_jwk = agency.private_jwk
