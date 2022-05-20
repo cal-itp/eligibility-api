@@ -153,6 +153,10 @@ class Client:
         jwe_cek_enc,
         server_public_jwk,
     ):
+        self.api_url = api_url
+        self.api_auth_header = api_auth_header
+        self.api_auth_key = api_auth_key
+
         self.issuer = issuer
         self.agency_identifier = agency_identifier
         self.types = types
@@ -162,10 +166,6 @@ class Client:
         self.jwe_encryption_alg = jwe_encryption_alg
         self.jwe_cek_enc = jwe_cek_enc
         self.server_public_jwk = server_public_jwk
-
-        self.api_url = api_url
-        self.api_auth_header = api_auth_header
-        self.api_auth_key = api_auth_key
 
     def _tokenize_request(self, sub, name):
         """Create a request token."""
