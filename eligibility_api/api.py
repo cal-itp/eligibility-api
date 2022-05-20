@@ -29,7 +29,7 @@ class RequestToken:
     def __init__(
         self,
         types: Iterable[str],
-        agency_id: str,
+        agency_identifier: str,
         jws_signing_alg: str,
         client_private_jwk: jwk.JWK,
         jwe_encryption_alg: str,
@@ -50,7 +50,7 @@ class RequestToken:
                 .replace(tzinfo=datetime.timezone.utc)
                 .timestamp()
             ),
-            agency=agency_id,
+            agency=agency_identifier,
             eligibility=types,
             sub=sub,
             name=name,
@@ -139,28 +139,39 @@ class ResponseToken:
 class Client:
     """Eligibility Verification API HTTP client."""
 
-    def __init__(self, agency, verifier, issuer):
-        logger.debug(f"Initialize client for agency: {agency.short_name}")
+    def __init__(
+        self,
+        api_url,
+        api_auth_header,
+        api_auth_key,
+        issuer,
+        agency_identifier,
+        types,
+        jws_signing_alg,
+        client_private_jwk,
+        jwe_encryption_alg,
+        jwe_cek_enc,
+        server_public_jwk,
+    ):
         self.issuer = issuer
+        self.agency_identifier = agency_identifier
+        self.types = types
 
-        # get the eligibility type names
-        self.types = list(map(lambda t: t.name, agency.types_to_verify(verifier)))
-        self.agency_id = agency.agency_id
-        self.jws_signing_alg = agency.jws_signing_alg
-        self.client_private_jwk = agency.private_jwk
-        self.jwe_encryption_alg = verifier.jwe_encryption_alg
-        self.jwe_cek_enc = verifier.jwe_cek_enc
-        self.server_public_jwk = verifier.public_jwk
+        self.jws_signing_alg = jws_signing_alg
+        self.client_private_jwk = client_private_jwk
+        self.jwe_encryption_alg = jwe_encryption_alg
+        self.jwe_cek_enc = jwe_cek_enc
+        self.server_public_jwk = server_public_jwk
 
-        self.api_url = verifier.api_url
-        self.api_auth_header = verifier.api_auth_header
-        self.api_auth_key = verifier.api_auth_key
+        self.api_url = api_url
+        self.api_auth_header = api_auth_header
+        self.api_auth_key = api_auth_key
 
     def _tokenize_request(self, sub, name):
         """Create a request token."""
         return RequestToken(
             self.types,
-            self.agency_id,
+            self.agency_identifier,
             self.jws_signing_alg,
             self.client_private_jwk,
             self.jwe_encryption_alg,
