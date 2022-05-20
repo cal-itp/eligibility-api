@@ -29,7 +29,7 @@ class RequestToken:
     def __init__(
         self,
         types: Iterable[str],
-        agency_id: str,
+        agency: str,
         jws_signing_alg: str,
         client_private_jwk: jwk.JWK,
         jwe_encryption_alg: str,
@@ -50,7 +50,7 @@ class RequestToken:
                 .replace(tzinfo=datetime.timezone.utc)
                 .timestamp()
             ),
-            agency=agency_id,
+            agency=agency,
             eligibility=types,
             sub=sub,
             name=name,
@@ -139,28 +139,40 @@ class ResponseToken:
 class Client:
     """Eligibility Verification API HTTP client."""
 
-    def __init__(self, agency, verifier, issuer):
-        logger.debug(f"Initialize client for agency: {agency.short_name}")
+    def __init__(
+        self,
+        verify_url,
+        issuer,
+        agency,
+        jws_signing_alg,
+        client_private_jwk,
+        jwe_encryption_alg,
+        jwe_cek_enc,
+        server_public_jwk,
+        headers={},
+    ):
+        self.verify_url = verify_url
+
         self.issuer = issuer
+        self.agency = agency
+        self.jws_signing_alg = jws_signing_alg
+        self.client_private_jwk = client_private_jwk
+        self.jwe_encryption_alg = jwe_encryption_alg
+        self.jwe_cek_enc = jwe_cek_enc
+        self.server_public_jwk = server_public_jwk
 
-        # get the eligibility type names
-        self.types = list(map(lambda t: t.name, agency.types_to_verify()))
-        self.agency_id = agency.agency_id
-        self.jws_signing_alg = agency.jws_signing_alg
-        self.client_private_jwk = agency.private_jwk
-        self.jwe_encryption_alg = verifier.jwe_encryption_alg
-        self.jwe_cek_enc = verifier.jwe_cek_enc
-        self.server_public_jwk = verifier.public_jwk
+        if "authorization" in set(k.lower() for k in headers):
+            raise ValueError(
+                '"Authorization" should not be set as an additional header.'
+            )
 
-        self.api_url = verifier.api_url
-        self.api_auth_header = verifier.api_auth_header
-        self.api_auth_key = verifier.api_auth_key
+        self.headers = headers
 
-    def _tokenize_request(self, sub, name):
+    def _tokenize_request(self, sub, name, types):
         """Create a request token."""
         return RequestToken(
-            self.types,
-            self.agency_id,
+            types,
+            self.agency,
             self.jws_signing_alg,
             self.client_private_jwk,
             self.jwe_encryption_alg,
@@ -185,21 +197,24 @@ class Client:
     def _auth_headers(self, token):
         """Create headers for the request with the token and verifier API keys"""
         headers = dict(Authorization=f"Bearer {token}")
-        headers[self.api_auth_header] = self.api_auth_key
+
+        for key, value in self.headers.items():
+            headers[key] = value
+
         return headers
 
-    def _request(self, sub, name):
+    def _request(self, sub, name, types):
         """Make an API request for eligibility verification."""
         logger.debug("Start new eligibility verification request")
 
         try:
-            token = self._tokenize_request(sub, name)
+            token = self._tokenize_request(sub, name, types)
         except jwcrypto.JWException:
             raise TokenError("Failed to tokenize form values")
 
         try:
-            logger.debug(f"GET request to {self.api_url}")
-            r = requests.get(self.api_url, headers=self._auth_headers(token))
+            logger.debug(f"GET request to {self.verify_url}")
+            r = requests.get(self.verify_url, headers=self._auth_headers(token))
         except requests.ConnectionError:
             raise ApiError("Connection to verification server failed")
         except requests.Timeout:
@@ -219,6 +234,6 @@ class Client:
             )
             raise ApiError("Unexpected eligibility verification response")
 
-    def verify(self, sub, name):
+    def verify(self, sub, name, types):
         """Check eligibility for the subject and name."""
-        return self._request(sub, name)
+        return self._request(sub, name, types)
