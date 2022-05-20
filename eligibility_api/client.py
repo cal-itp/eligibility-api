@@ -142,8 +142,6 @@ class Client:
     def __init__(
         self,
         verify_url,
-        api_auth_header,
-        api_auth_key,
         issuer,
         agency,
         jws_signing_alg,
@@ -151,10 +149,10 @@ class Client:
         jwe_encryption_alg,
         jwe_cek_enc,
         server_public_jwk,
+        headers={},
     ):
         self.verify_url = verify_url
-        self.api_auth_header = api_auth_header
-        self.api_auth_key = api_auth_key
+        self.headers = headers
 
         self.issuer = issuer
         self.agency = agency
@@ -193,7 +191,10 @@ class Client:
     def _auth_headers(self, token):
         """Create headers for the request with the token and verifier API keys"""
         headers = dict(Authorization=f"Bearer {token}")
-        headers[self.api_auth_header] = self.api_auth_key
+
+        for key, value in self.headers.items():
+            headers[key] = value
+
         return headers
 
     def _request(self, sub, name, types):
