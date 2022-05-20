@@ -161,7 +161,7 @@ class Client:
         self.jwe_cek_enc = jwe_cek_enc
         self.server_public_jwk = server_public_jwk
 
-        if "Authorization" in headers:
+        if "authorization" in set(k.lower() for k in headers):
             raise ValueError(
                 '"Authorization" should not be set as an additional header.'
             )
