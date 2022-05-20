@@ -141,7 +141,7 @@ class Client:
 
     def __init__(
         self,
-        api_url,
+        verify_url,
         api_auth_header,
         api_auth_key,
         issuer,
@@ -152,7 +152,7 @@ class Client:
         jwe_cek_enc,
         server_public_jwk,
     ):
-        self.api_url = api_url
+        self.verify_url = verify_url
         self.api_auth_header = api_auth_header
         self.api_auth_key = api_auth_key
 
@@ -206,8 +206,8 @@ class Client:
             raise TokenError("Failed to tokenize form values")
 
         try:
-            logger.debug(f"GET request to {self.api_url}")
-            r = requests.get(self.api_url, headers=self._auth_headers(token))
+            logger.debug(f"GET request to {self.verify_url}")
+            r = requests.get(self.verify_url, headers=self._auth_headers(token))
         except requests.ConnectionError:
             raise ApiError("Connection to verification server failed")
         except requests.Timeout:
