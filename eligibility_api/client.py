@@ -152,7 +152,6 @@ class Client:
         headers={},
     ):
         self.verify_url = verify_url
-        self.headers = headers
 
         self.issuer = issuer
         self.agency = agency
@@ -161,6 +160,13 @@ class Client:
         self.jwe_encryption_alg = jwe_encryption_alg
         self.jwe_cek_enc = jwe_cek_enc
         self.server_public_jwk = server_public_jwk
+
+        if "Authorization" in headers:
+            raise ValueError(
+                '"Authorization" should not be set as an additional header.'
+            )
+
+        self.headers = headers
 
     def _tokenize_request(self, sub, name, types):
         """Create a request token."""
