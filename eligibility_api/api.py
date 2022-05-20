@@ -146,7 +146,6 @@ class Client:
         api_auth_key,
         issuer,
         agency_identifier,
-        types,
         jws_signing_alg,
         client_private_jwk,
         jwe_encryption_alg,
@@ -159,18 +158,16 @@ class Client:
 
         self.issuer = issuer
         self.agency_identifier = agency_identifier
-        self.types = types
-
         self.jws_signing_alg = jws_signing_alg
         self.client_private_jwk = client_private_jwk
         self.jwe_encryption_alg = jwe_encryption_alg
         self.jwe_cek_enc = jwe_cek_enc
         self.server_public_jwk = server_public_jwk
 
-    def _tokenize_request(self, sub, name):
+    def _tokenize_request(self, sub, name, types):
         """Create a request token."""
         return RequestToken(
-            self.types,
+            types,
             self.agency_identifier,
             self.jws_signing_alg,
             self.client_private_jwk,
@@ -199,12 +196,12 @@ class Client:
         headers[self.api_auth_header] = self.api_auth_key
         return headers
 
-    def _request(self, sub, name):
+    def _request(self, sub, name, types):
         """Make an API request for eligibility verification."""
         logger.debug("Start new eligibility verification request")
 
         try:
-            token = self._tokenize_request(sub, name)
+            token = self._tokenize_request(sub, name, types)
         except jwcrypto.JWException:
             raise TokenError("Failed to tokenize form values")
 
@@ -230,6 +227,6 @@ class Client:
             )
             raise ApiError("Unexpected eligibility verification response")
 
-    def verify(self, sub, name):
+    def verify(self, sub, name, types):
         """Check eligibility for the subject and name."""
-        return self._request(sub, name)
+        return self._request(sub, name, types)
