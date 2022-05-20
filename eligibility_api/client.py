@@ -29,7 +29,7 @@ class RequestToken:
     def __init__(
         self,
         types: Iterable[str],
-        agency_identifier: str,
+        agency: str,
         jws_signing_alg: str,
         client_private_jwk: jwk.JWK,
         jwe_encryption_alg: str,
@@ -50,7 +50,7 @@ class RequestToken:
                 .replace(tzinfo=datetime.timezone.utc)
                 .timestamp()
             ),
-            agency=agency_identifier,
+            agency=agency,
             eligibility=types,
             sub=sub,
             name=name,
@@ -145,7 +145,7 @@ class Client:
         api_auth_header,
         api_auth_key,
         issuer,
-        agency_identifier,
+        agency,
         jws_signing_alg,
         client_private_jwk,
         jwe_encryption_alg,
@@ -157,7 +157,7 @@ class Client:
         self.api_auth_key = api_auth_key
 
         self.issuer = issuer
-        self.agency_identifier = agency_identifier
+        self.agency = agency
         self.jws_signing_alg = jws_signing_alg
         self.client_private_jwk = client_private_jwk
         self.jwe_encryption_alg = jwe_encryption_alg
@@ -168,7 +168,7 @@ class Client:
         """Create a request token."""
         return RequestToken(
             types,
-            self.agency_identifier,
+            self.agency,
             self.jws_signing_alg,
             self.client_private_jwk,
             self.jwe_encryption_alg,
