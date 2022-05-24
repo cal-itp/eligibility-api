@@ -7,28 +7,31 @@ from jwcrypto import jwe, jws, jwk, jwt
 logger = logging.getLogger(__name__)
 
 
-def _jwk(pem_bytes):
-    return jwk.JWK.from_pem(pem_bytes)
+def _jwk(pem_data):
+    if isinstance(pem_data, str):
+        pem_data = bytes(pem_data, "utf-8")
+
+    return jwk.JWK.from_pem(pem_data)
 
 
 def get_token_payload(
     token: str,
     jwe_encryption_alg: str,
     jwe_cek_enc: str,
-    server_private_key_bytes,
+    server_private_key,
     jws_signing_alg: str,
-    client_public_key_bytes,
+    client_public_key,
 ) -> dict:
     """Decode a token (JWE(JWS))."""
     try:
         # decrypt
         decrypted_token = jwe.JWE(algs=[jwe_encryption_alg, jwe_cek_enc])
-        decrypted_token.deserialize(token, key=_jwk(server_private_key_bytes))
+        decrypted_token.deserialize(token, key=_jwk(server_private_key))
         decrypted_payload = str(decrypted_token.payload, "utf-8")
         # verify signature
         signed_token = jws.JWS()
         signed_token.deserialize(
-            decrypted_payload, key=_jwk(client_public_key_bytes), alg=jws_signing_alg
+            decrypted_payload, key=_jwk(client_public_key), alg=jws_signing_alg
         )
         # return final payload
         payload = str(signed_token.payload, "utf-8")
@@ -54,16 +57,16 @@ def create_response_payload(token_payload: dict, issuer: str) -> dict:
 def make_token(
     payload: dict,
     jws_signing_alg: str,
-    server_private_key_bytes,
+    server_private_key,
     jwe_encryption_alg: str,
     jwe_cek_enc: str,
-    client_public_key_bytes,
+    client_public_key,
 ) -> str:
     """Wrap payload in a signed and encrypted JWT for response."""
     # sign the payload with server's private key
     header = {"typ": "JWS", "alg": jws_signing_alg}
     signed_token = jwt.JWT(header=header, claims=payload)
-    signed_token.make_signed_token(_jwk(server_private_key_bytes))
+    signed_token.make_signed_token(_jwk(server_private_key))
     signed_payload = signed_token.serialize()
     # encrypt the signed payload with client's public key
     header = {
@@ -72,5 +75,5 @@ def make_token(
         "enc": jwe_cek_enc,
     }
     encrypted_token = jwt.JWT(header=header, claims=signed_payload)
-    encrypted_token.make_encrypted_token(_jwk(client_public_key_bytes))
+    encrypted_token.make_encrypted_token(_jwk(client_public_key))
     return encrypted_token.serialize()

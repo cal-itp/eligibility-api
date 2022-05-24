@@ -145,10 +145,10 @@ class Client:
         issuer,
         agency,
         jws_signing_alg,
-        client_private_key_bytes,
+        client_private_key,
         jwe_encryption_alg,
         jwe_cek_enc,
-        server_public_key_bytes,
+        server_public_key,
         headers={},
     ):
         self.verify_url = verify_url
@@ -156,10 +156,10 @@ class Client:
         self.issuer = issuer
         self.agency = agency
         self.jws_signing_alg = jws_signing_alg
-        self.client_private_jwk = self._jwk(client_private_key_bytes)
+        self.client_private_jwk = self._jwk(client_private_key)
         self.jwe_encryption_alg = jwe_encryption_alg
         self.jwe_cek_enc = jwe_cek_enc
-        self.server_public_jwk = self._jwk(server_public_key_bytes)
+        self.server_public_jwk = self._jwk(server_public_key)
 
         if "authorization" in set(k.lower() for k in headers):
             raise ValueError(
@@ -168,8 +168,11 @@ class Client:
 
         self.headers = headers
 
-    def _jwk(self, pem_bytes):
-        return jwk.JWK.from_pem(pem_bytes)
+    def _jwk(self, pem_data):
+        if isinstance(pem_data, str):
+            pem_data = bytes(pem_data, "utf-8")
+
+        return jwk.JWK.from_pem(pem_data)
 
     def _tokenize_request(self, sub, name, types):
         """Create a request token."""
