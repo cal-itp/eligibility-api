@@ -23,6 +23,22 @@ class TokenError(Exception):
     pass
 
 
+class JWK:
+    """JSON Web Key for use during signing or encrypting."""
+
+    @classmethod
+    def from_pem(cls, data, password=None):
+        obj = cls()
+        obj.key = jwk.JWK.from_pem(data, password)
+        return obj
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return str(self.key)
+
+
 class RequestToken:
     """Eligibility Verification API request token."""
 
@@ -145,10 +161,10 @@ class Client:
         issuer: str,
         agency: str,
         jws_signing_alg: str,
-        client_private_jwk: jwk.JWK,
+        client_private_jwk: JWK,
         jwe_encryption_alg: str,
         jwe_cek_enc: str,
-        server_public_jwk: jwk.JWK,
+        server_public_jwk: JWK,
         headers={},
     ):
         self.verify_url = verify_url
@@ -156,10 +172,10 @@ class Client:
         self.issuer = issuer
         self.agency = agency
         self.jws_signing_alg = jws_signing_alg
-        self.client_private_jwk = client_private_jwk
+        self.client_private_jwk = client_private_jwk.key
         self.jwe_encryption_alg = jwe_encryption_alg
         self.jwe_cek_enc = jwe_cek_enc
-        self.server_public_jwk = server_public_jwk
+        self.server_public_jwk = server_public_jwk.key
 
         if "authorization" in set(k.lower() for k in headers):
             raise ValueError(
