@@ -141,14 +141,14 @@ class Client:
 
     def __init__(
         self,
-        verify_url,
-        issuer,
-        agency,
-        jws_signing_alg,
-        client_private_jwk,
-        jwe_encryption_alg,
-        jwe_cek_enc,
-        server_public_jwk,
+        verify_url: str,
+        issuer: str,
+        agency: str,
+        jws_signing_alg: str,
+        client_private_jwk: jwk.JWK,
+        jwe_encryption_alg: str,
+        jwe_cek_enc: str,
+        server_public_jwk: jwk.JWK,
         headers={},
     ):
         self.verify_url = verify_url
