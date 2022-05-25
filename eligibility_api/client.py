@@ -7,6 +7,8 @@ import requests
 from jwcrypto import common as jwcrypto, jwe, jws, jwt, jwk
 from typing import Iterable
 
+from .common import create_jwk
+
 
 logger = logging.getLogger(__name__)
 
@@ -156,10 +158,10 @@ class Client:
         self.issuer = issuer
         self.agency = agency
         self.jws_signing_alg = jws_signing_alg
-        self.client_private_jwk = self._jwk(client_private_key)
+        self.client_private_jwk = create_jwk(client_private_key)
         self.jwe_encryption_alg = jwe_encryption_alg
         self.jwe_cek_enc = jwe_cek_enc
-        self.server_public_jwk = self._jwk(server_public_key)
+        self.server_public_jwk = create_jwk(server_public_key)
 
         if "authorization" in set(k.lower() for k in headers):
             raise ValueError(
@@ -167,12 +169,6 @@ class Client:
             )
 
         self.headers = headers
-
-    def _jwk(self, pem_data):
-        if isinstance(pem_data, str):
-            pem_data = bytes(pem_data, "utf-8")
-
-        return jwk.JWK.from_pem(pem_data)
 
     def _tokenize_request(self, sub, name, types):
         """Create a request token."""
