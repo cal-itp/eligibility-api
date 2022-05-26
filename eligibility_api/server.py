@@ -4,7 +4,7 @@ import logging
 
 from jwcrypto import jwe, jws, jwt
 
-from .common import create_jwk
+from .tokens import create_jwk
 
 logger = logging.getLogger(__name__)
 
