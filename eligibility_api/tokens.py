@@ -10,7 +10,7 @@ import requests
 logger = logging.getLogger(__name__)
 
 
-def create_jwk(pem_data):
+def _create_jwk(pem_data):
     if isinstance(pem_data, str):
         pem_data = bytes(pem_data, "utf-8")
 
@@ -31,15 +31,18 @@ class RequestToken:
         types: Iterable[str],
         agency: str,
         jws_signing_alg: str,
-        client_private_jwk: jwk.JWK,
+        client_private_key,
         jwe_encryption_alg: str,
         jwe_cek_enc: str,
-        server_public_jwk: jwk.JWK,
+        server_public_key,
         sub: str,
         name: str,
         issuer: str,
     ):
         logger.info("Initialize new request token")
+
+        self.client_private_jwk = _create_jwk(client_private_key)
+        self.server_public_jwk = _create_jwk(server_public_key)
 
         # craft the main token payload
         payload = dict(
@@ -59,7 +62,7 @@ class RequestToken:
         logger.debug("Sign token payload with agency's private key")
         header = {"typ": "JWS", "alg": jws_signing_alg}
         signed_token = jwt.JWT(header=header, claims=payload)
-        signed_token.make_signed_token(client_private_jwk)
+        signed_token.make_signed_token(self.client_private_jwk)
         signed_payload = signed_token.serialize()
 
         logger.debug("Encrypt signed token payload with verifier's public key")
@@ -69,7 +72,7 @@ class RequestToken:
             "enc": jwe_cek_enc,
         }
         encrypted_token = jwt.JWT(header=header, claims=signed_payload)
-        encrypted_token.make_encrypted_token(server_public_jwk)
+        encrypted_token.make_encrypted_token(self.server_public_jwk)
 
         logger.info("Signed and encrypted request token initialized")
         self._jwe = encrypted_token
@@ -89,11 +92,14 @@ class ResponseToken:
         response: requests.models.Response,
         jwe_encryption_alg: str,
         jwe_cek_enc: str,
-        client_private_jwk: jwk.JWK,
+        client_private_key,
         jws_signing_alg: str,
-        server_public_jwk: jwk.JWK,
+        server_public_key,
     ):
         logger.info("Read encrypted token from response")
+
+        self.client_private_jwk = _create_jwk(client_private_key)
+        self.server_public_jwk = _create_jwk(server_public_key)
 
         try:
             encrypted_signed_token = response.text
@@ -108,7 +114,9 @@ class ResponseToken:
         allowed_algs = [jwe_encryption_alg, jwe_cek_enc]
         decrypted_token = jwe.JWE(algs=allowed_algs)
         try:
-            decrypted_token.deserialize(encrypted_signed_token, key=client_private_jwk)
+            decrypted_token.deserialize(
+                encrypted_signed_token, key=self.client_private_jwk
+            )
         except jwe.InvalidJWEData:
             raise TokenError("Invalid JWE token")
         except jwe.InvalidJWEOperation:
@@ -122,7 +130,7 @@ class ResponseToken:
         signed_token = jws.JWS()
         try:
             signed_token.deserialize(
-                decrypted_payload, key=server_public_jwk, alg=jws_signing_alg
+                decrypted_payload, key=self.server_public_jwk, alg=jws_signing_alg
             )
         except jws.InvalidJWSObject:
             raise TokenError("Invalid JWS token")

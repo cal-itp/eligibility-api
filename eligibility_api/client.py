@@ -3,7 +3,7 @@ import requests
 
 from jwcrypto import common as jwcrypto
 
-from .tokens import create_jwk, RequestToken, ResponseToken, TokenError
+from .tokens import RequestToken, ResponseToken, TokenError
 
 
 logger = logging.getLogger(__name__)
@@ -35,10 +35,10 @@ class Client:
         self.issuer = issuer
         self.agency = agency
         self.jws_signing_alg = jws_signing_alg
-        self.client_private_jwk = create_jwk(client_private_key)
+        self.client_private_key = client_private_key
         self.jwe_encryption_alg = jwe_encryption_alg
         self.jwe_cek_enc = jwe_cek_enc
-        self.server_public_jwk = create_jwk(server_public_key)
+        self.server_public_key = server_public_key
 
         if "authorization" in set(k.lower() for k in headers):
             raise ValueError(
@@ -53,10 +53,10 @@ class Client:
             types,
             self.agency,
             self.jws_signing_alg,
-            self.client_private_jwk,
+            self.client_private_key,
             self.jwe_encryption_alg,
             self.jwe_cek_enc,
-            self.server_public_jwk,
+            self.server_public_key,
             sub,
             name,
             self.issuer,
@@ -68,9 +68,9 @@ class Client:
             response,
             self.jwe_encryption_alg,
             self.jwe_cek_enc,
-            self.client_private_jwk,
+            self.client_private_key,
             self.jws_signing_alg,
-            self.server_public_jwk,
+            self.server_public_key,
         )
 
     def _auth_headers(self, token):
