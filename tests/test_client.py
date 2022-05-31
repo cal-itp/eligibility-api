@@ -6,29 +6,17 @@ import pytest
 from eligibility_api.client import Client
 
 
-def test_create_valid_client():
-    try:
-        verify_url = ("http://localhost/verify",)
-        issuer = "test-issuer"
-        agency = "abc"
-        jws_signing_alg = "RS256"
-        client_private_key = _get_key("client.pub")
-        jwe_encryption_alg = "RSA-OAEP"
-        jwe_cek_enc = "A256CBC-HS512"
-        server_public_key = _get_key("server.key")
-
-        Client(
-            verify_url,
-            issuer,
-            agency,
-            jws_signing_alg,
-            client_private_key,
-            jwe_encryption_alg,
-            jwe_cek_enc,
-            server_public_key,
-        )
-    except Exception:
-        pytest.fail("Failed to create valid Client")
+def _valid_configuration():
+    return dict(
+        verify_url="http=//localhost/verify",
+        issuer="test-issuer",
+        agency="abc",
+        jws_signing_alg="RS256",
+        client_private_key=_get_key("client.pub"),
+        jwe_encryption_alg="RSA-OAEP",
+        jwe_cek_enc="A256CBC-HS512",
+        server_public_key=_get_key("server.key"),
+    )
 
 
 def _get_key(filename):
@@ -41,8 +29,21 @@ def _get_key(filename):
     return key
 
 
-def test_create_invalid_client_bad_headers():
-    pass
+def test_create_valid_client():
+    try:
+        Client(**_valid_configuration())
+    except Exception:
+        pytest.fail("Failed to create valid Client")
+
+
+@pytest.mark.parametrize(
+    "header_name", ["Authorization", "authorization", "AuThOrIzAtIoN"]
+)
+def test_create_invalid_client_bad_headers(header_name):
+    headers = {header_name: "value"}
+
+    with pytest.raises(ValueError):
+        Client(**_valid_configuration(), headers=headers)
 
 
 def test_client_verify_success():
