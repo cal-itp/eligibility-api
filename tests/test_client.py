@@ -48,20 +48,28 @@ def test_create_invalid_client_bad_headers(header_name):
         Client(**_valid_configuration(), headers=headers)
 
 
-def mock_server_response(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        response = responses.Response(method="GET", url="http://localhost/verify")
-        response.status = 200
+def mock_server_response(
+    _func=None, *, method="GET", url="http://localhost/verify", status=200
+):
+    def decorator(func):
+        @responses.activate
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            response = responses.Response(method=method, url=url)
+            response.status = status
 
-        responses.add(response)
+            responses.add(response)
 
-        return func(*args, **kwargs)
+            return func(*args, **kwargs)
 
-    return wrapper
+        return wrapper
+
+    if _func is None:
+        return decorator
+    else:
+        return decorator(_func)
 
 
-@responses.activate
 @mock_server_response
 def test_client_verify_success(mocker):
     client = Client(**_valid_configuration())
