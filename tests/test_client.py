@@ -3,6 +3,7 @@ from functools import wraps
 from pathlib import Path
 
 import pytest
+import requests
 import responses
 
 from eligibility_api.client import ApiError, Client
@@ -110,8 +111,48 @@ def test_client_verify_unexpected_response_code(mocker, status):
         client.verify(*_test_data())
 
 
-def test_client_verify_failed_request():  # should be parameterized
-    pass
+def mock_server_error(
+    _func=None, *, method="GET", url="http://localhost/verify", exception=RuntimeError
+):
+    def decorator(func):
+        @wraps(func)
+        @responses.activate
+        def wrapper(*args, **kwargs):
+            response = responses.Response(method=method, url=url)
+
+            if "expected_exception" in kwargs:
+                response.body = kwargs["expected_exception"]()
+            else:
+                response.body = exception()
+
+            responses.add(response)
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    if _func is None:
+        return decorator
+    else:
+        return decorator(_func)
+
+
+@mock_server_error
+@pytest.mark.parametrize(
+    "expected_exception",
+    [
+        requests.ConnectionError,
+        requests.Timeout,
+        requests.TooManyRedirects,
+        requests.HTTPError,
+    ],
+)
+def test_client_verify_failed_request(mocker, expected_exception):
+    client = Client(**_valid_configuration())
+    mock_request_token(mocker, client)
+    mock_response_token(mocker, client)
+
+    with pytest.raises(ApiError):
+        client.verify(*_test_data())
 
 
 def test_client_verify_failed_tokenize_request():
