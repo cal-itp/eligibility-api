@@ -60,7 +60,10 @@ def mock_server_response(
         @wraps(func)
         def wrapper(*args, **kwargs):
             response = responses.Response(method=method, url=url)
-            response.status = status
+            if "status" in kwargs:
+                response.status = kwargs["status"]
+            else:
+                response.status = status
 
             responses.add(response)
 
@@ -96,8 +99,9 @@ def test_client_verify_success(mocker):
         pytest.fail("Failed to return from Client.verify")
 
 
-@mock_server_response(status=404)
-def test_client_verify_unexpected_response_code(mocker):
+@mock_server_response
+@pytest.mark.parametrize("status", [403, 404, 500])
+def test_client_verify_unexpected_response_code(mocker, status):
     client = Client(**_valid_configuration())
     mock_request_token(mocker, client)
     mock_response_token(mocker, client)
