@@ -70,15 +70,21 @@ def mock_server_response(
         return decorator(_func)
 
 
-@mock_server_response
-def test_client_verify_success(mocker):
-    client = Client(**_valid_configuration())
-
+def mock_request_token(mocker, client):
     mock_request_token = mocker.patch("eligibility_api.tokens.RequestToken")
     mocker.patch.object(client, "_tokenize_request", return_value=mock_request_token)
 
+
+def mock_response_token(mocker, client):
     mock_response_token = mocker.patch("eligibility_api.tokens.ResponseToken")
     mocker.patch.object(client, "_tokenize_response", return_value=mock_response_token)
+
+
+@mock_server_response
+def test_client_verify_success(mocker):
+    client = Client(**_valid_configuration())
+    mock_request_token(mocker, client)
+    mock_response_token(mocker, client)
 
     try:
         client.verify("A1234567", "Garcia", ["type1"])
