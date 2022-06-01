@@ -1,4 +1,5 @@
 import os
+from functools import wraps
 from pathlib import Path
 
 import pytest
@@ -47,10 +48,22 @@ def test_create_invalid_client_bad_headers(header_name):
         Client(**_valid_configuration(), headers=headers)
 
 
-@responses.activate
-def test_client_verify_success(mocker):
-    responses.add(responses.Response(method="GET", url="http://localhost/verify"))
+def mock_server_response(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        response = responses.Response(method="GET", url="http://localhost/verify")
+        response.status = 200
 
+        responses.add(response)
+
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+@responses.activate
+@mock_server_response
+def test_client_verify_success(mocker):
     client = Client(**_valid_configuration())
 
     mock_request_token = mocker.patch("eligibility_api.tokens.RequestToken")
