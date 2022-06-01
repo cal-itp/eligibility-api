@@ -100,7 +100,8 @@ def mock_response_token(mocker, client, exception=None):
 
 
 @mock_server_response
-def test_client_verify_success(mocker):
+@pytest.mark.parametrize("status", [200, 400])  # API spec has 400 as an expected code
+def test_client_verify_success(mocker, status):
     client = Client(**_valid_configuration())
     mock_request_token(mocker, client)
     mock_response_token(mocker, client)
