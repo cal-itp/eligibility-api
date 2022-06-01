@@ -2,13 +2,14 @@ import os
 from pathlib import Path
 
 import pytest
+import responses
 
 from eligibility_api.client import Client
 
 
 def _valid_configuration():
     return dict(
-        verify_url="http=//localhost/verify",
+        verify_url="http://localhost/verify",
         issuer="test-issuer",
         agency="abc",
         jws_signing_alg="RS256",
@@ -46,8 +47,22 @@ def test_create_invalid_client_bad_headers(header_name):
         Client(**_valid_configuration(), headers=headers)
 
 
-def test_client_verify_success():
-    pass
+@responses.activate
+def test_client_verify_success(mocker):
+    responses.add(responses.Response(method="GET", url="http://localhost/verify"))
+
+    client = Client(**_valid_configuration())
+
+    mock_request_token = mocker.patch("eligibility_api.tokens.RequestToken")
+    mocker.patch.object(client, "_tokenize_request", return_value=mock_request_token)
+
+    mock_response_token = mocker.patch("eligibility_api.tokens.ResponseToken")
+    mocker.patch.object(client, "_tokenize_response", return_value=mock_response_token)
+
+    try:
+        client.verify("A1234567", "Garcia", ["type1"])
+    except Exception:
+        pytest.fail("Failed to return from Client.verify")
 
 
 def test_client_verify_unexpected_response_code():
