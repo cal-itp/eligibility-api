@@ -119,7 +119,7 @@ def test_client_verify_unexpected_response_code(mocker, status):
     mock_request_token(mocker, client)
     mock_response_token(mocker, client)
 
-    with pytest.raises(ApiError):
+    with pytest.raises(ApiError, match="Unexpected eligibility verification response"):
         client.verify(*_test_data())
 
 
@@ -150,20 +150,20 @@ def mock_server_error(
 
 @mock_server_error
 @pytest.mark.parametrize(
-    "expected_exception",
+    "expected_exception,match",
     [
-        requests.ConnectionError,
-        requests.Timeout,
-        requests.TooManyRedirects,
-        requests.HTTPError,
+        (requests.ConnectionError, "Connection to verification server failed"),
+        (requests.Timeout, "Connection to verification server timed out"),
+        (requests.TooManyRedirects, "Too many redirects to verification server"),
+        (requests.HTTPError, ""),
     ],
 )
-def test_client_verify_failed_request(mocker, expected_exception):
+def test_client_verify_failed_request(mocker, expected_exception, match):
     client = Client(**_valid_configuration())
     mock_request_token(mocker, client)
     mock_response_token(mocker, client)
 
-    with pytest.raises(ApiError):
+    with pytest.raises(ApiError, match=match):
         client.verify(*_test_data())
 
 
