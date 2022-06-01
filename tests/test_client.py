@@ -113,6 +113,24 @@ def test_client_verify_success(mocker, status):
 
 
 @mock_server_response
+def test_create_valid_client_additional_headers(mocker):
+    headers = {"X-Server-API-Key": "server-auth-token"}
+
+    try:
+        client = Client(**_valid_configuration(), headers=headers)
+    except Exception:
+        pytest.fail("Failed to create valid Client")
+
+    mock_request_token(mocker, client)
+    mock_response_token(mocker, client)
+
+    try:
+        client.verify(*_test_data())
+    except Exception:
+        pytest.fail("Failed to return from Client.verify")
+
+
+@mock_server_response
 @pytest.mark.parametrize("status", [403, 404, 500])
 def test_client_verify_unexpected_response_code(mocker, status):
     client = Client(**_valid_configuration())
