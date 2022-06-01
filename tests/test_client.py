@@ -2,11 +2,12 @@ import os
 from functools import wraps
 from pathlib import Path
 
+from jwcrypto import common as jwcrypto
 import pytest
 import requests
 import responses
 
-from eligibility_api.client import ApiError, Client
+from eligibility_api.client import ApiError, Client, TokenError
 
 
 def _test_data():
@@ -78,14 +79,24 @@ def mock_server_response(
         return decorator(_func)
 
 
-def mock_request_token(mocker, client):
-    mock_request_token = mocker.patch("eligibility_api.tokens.RequestToken")
-    mocker.patch.object(client, "_tokenize_request", return_value=mock_request_token)
+def mock_request_token(mocker, client, exception=None):
+    if exception is None:
+        mock_request_token = mocker.patch("eligibility_api.tokens.RequestToken")
+        mocker.patch.object(
+            client, "_tokenize_request", return_value=mock_request_token
+        )
+    else:
+        mocker.patch.object(client, "_tokenize_request", side_effect=exception())
 
 
-def mock_response_token(mocker, client):
-    mock_response_token = mocker.patch("eligibility_api.tokens.ResponseToken")
-    mocker.patch.object(client, "_tokenize_response", return_value=mock_response_token)
+def mock_response_token(mocker, client, exception=None):
+    if exception is None:
+        mock_response_token = mocker.patch("eligibility_api.tokens.ResponseToken")
+        mocker.patch.object(
+            client, "_tokenize_response", return_value=mock_response_token
+        )
+    else:
+        mocker.patch.object(client, "_tokenize_request", side_effect=exception())
 
 
 @mock_server_response
@@ -155,9 +166,21 @@ def test_client_verify_failed_request(mocker, expected_exception):
         client.verify(*_test_data())
 
 
-def test_client_verify_failed_tokenize_request():
-    pass
+@mock_server_response
+def test_client_verify_failed_tokenize_request(mocker):
+    client = Client(**_valid_configuration())
+    mock_request_token(mocker, client, exception=jwcrypto.JWException)
+    mock_response_token(mocker, client)
+
+    with pytest.raises(TokenError, match="Failed to tokenize form values"):
+        client.verify(*_test_data())
 
 
-def test_client_verify_failed_tokenize_response():
-    pass
+@mock_server_response
+def test_client_verify_failed_tokenize_response(mocker):
+    client = Client(**_valid_configuration())
+    mock_request_token(mocker, client)
+    mock_response_token(mocker, client, exception=TokenError)
+
+    with pytest.raises(TokenError):
+        client.verify(*_test_data())
