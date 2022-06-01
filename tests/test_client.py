@@ -5,7 +5,11 @@ from pathlib import Path
 import pytest
 import responses
 
-from eligibility_api.client import Client
+from eligibility_api.client import ApiError, Client
+
+
+def _test_data():
+    return ("A1234567", "Garcia", ["type1"])
 
 
 def _valid_configuration():
@@ -87,13 +91,19 @@ def test_client_verify_success(mocker):
     mock_response_token(mocker, client)
 
     try:
-        client.verify("A1234567", "Garcia", ["type1"])
+        client.verify(*_test_data())
     except Exception:
         pytest.fail("Failed to return from Client.verify")
 
 
-def test_client_verify_unexpected_response_code():
-    pass
+@mock_server_response(status=404)
+def test_client_verify_unexpected_response_code(mocker):
+    client = Client(**_valid_configuration())
+    mock_request_token(mocker, client)
+    mock_response_token(mocker, client)
+
+    with pytest.raises(ApiError):
+        client.verify(*_test_data())
 
 
 def test_client_verify_failed_request():  # should be parameterized
