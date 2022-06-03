@@ -38,6 +38,7 @@ def _get_key(filename):
 
 
 def test_create_valid_client():
+    # Creating a valid Client should not throw an Exception
     try:
         Client(**_valid_configuration())
     except Exception:
@@ -106,6 +107,7 @@ def test_client_verify_success(mocker, status):
     mock_request_token(mocker, client)
     mock_response_token(mocker, client)
 
+    # Calling verify with a successful server response should not throw an Exception
     try:
         client.verify(*_test_data())
     except Exception:
@@ -116,6 +118,7 @@ def test_client_verify_success(mocker, status):
 def test_create_valid_client_additional_headers(mocker):
     headers = {"X-Server-API-Key": "server-auth-token"}
 
+    # Creating a valid client with valid additional headers should not throw an Exception
     try:
         client = Client(**_valid_configuration(), headers=headers)
     except Exception:
@@ -124,6 +127,8 @@ def test_create_valid_client_additional_headers(mocker):
     mock_request_token(mocker, client)
     mock_response_token(mocker, client)
 
+    # Calling verify with a successful server response and valid additional headers
+    # should not throw an Exception
     try:
         client.verify(*_test_data())
     except Exception:
