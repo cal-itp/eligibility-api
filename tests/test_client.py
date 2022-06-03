@@ -43,12 +43,18 @@ def test_create_valid_client_additional_headers(mocker):
     # Creating a valid client with valid additional headers should not throw an Exception
     headers = {"X-Server-API-Key": "server-auth-token"}
     try:
-        client = Client(**_valid_configuration(), headers=headers)
+        Client(**_valid_configuration(), headers=headers)
     except Exception:
         pytest.fail("Failed to create valid Client")
 
+
+@responses.activate
+def test_client_verify_additional_headers_success(mocker):
+    headers = {"X-Server-API-Key": "server-auth-token"}
+    client = Client(**_valid_configuration(), headers=headers)
     mock_request_token(mocker, client)
     mock_response_token(mocker, client)
+    mock_server_response()
 
     # Calling verify with a successful server response and valid additional headers
     # should not throw an Exception
