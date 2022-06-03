@@ -1,8 +1,13 @@
 {
     "name": "cal-itp/eligibility-api",
-    "dockerComposeFile": ["./docker-compose.yml"],
+    "dockerComposeFile": [
+        "./docker-compose.yml"
+    ],
     "service": "dev",
-    "runServices": ["dev", "docs"],
+    "runServices": [
+        "dev",
+        "docs"
+    ],
     "workspaceFolder": "/home/calitp/src",
     "postStartCommand": [
         "/bin/bash",
@@ -20,7 +25,8 @@
     // Add the IDs of extensions you want installed when the container is created.
     "extensions": [
         "eamodio.gitlens",
+        "mhutchie.git-graph",
         "ms-python.python",
-        "ms-python.vscode-pylance",
+        "ms-python.vscode-pylance"
     ]
 }
