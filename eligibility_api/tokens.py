@@ -48,11 +48,7 @@ class RequestToken:
         payload = dict(
             jti=str(uuid.uuid4()),
             iss=issuer,
-            iat=int(
-                datetime.datetime.utcnow()
-                .replace(tzinfo=datetime.timezone.utc)
-                .timestamp()
-            ),
+            iat=int(datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).timestamp()),
             agency=agency,
             eligibility=types,
             sub=sub,
@@ -114,9 +110,7 @@ class ResponseToken:
         allowed_algs = [jwe_encryption_alg, jwe_cek_enc]
         decrypted_token = jwe.JWE(algs=allowed_algs)
         try:
-            decrypted_token.deserialize(
-                encrypted_signed_token, key=self.client_private_jwk
-            )
+            decrypted_token.deserialize(encrypted_signed_token, key=self.client_private_jwk)
         except jwe.InvalidJWEData:
             raise TokenError("Invalid JWE token")
         except jwe.InvalidJWEOperation:
@@ -124,14 +118,10 @@ class ResponseToken:
 
         decrypted_payload = str(decrypted_token.payload, "utf-8")
 
-        logger.debug(
-            "Verify decrypted response token's signature using verifier's public key"
-        )
+        logger.debug("Verify decrypted response token's signature using verifier's public key")
         signed_token = jws.JWS()
         try:
-            signed_token.deserialize(
-                decrypted_payload, key=self.server_public_jwk, alg=jws_signing_alg
-            )
+            signed_token.deserialize(decrypted_payload, key=self.server_public_jwk, alg=jws_signing_alg)
         except jws.InvalidJWSObject:
             raise TokenError("Invalid JWS token")
         except jws.InvalidJWSSignature:

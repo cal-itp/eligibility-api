@@ -25,9 +25,7 @@ def get_token_payload(
         decrypted_payload = str(decrypted_token.payload, "utf-8")
         # verify signature
         signed_token = jws.JWS()
-        signed_token.deserialize(
-            decrypted_payload, key=_create_jwk(client_public_key), alg=jws_signing_alg
-        )
+        signed_token.deserialize(decrypted_payload, key=_create_jwk(client_public_key), alg=jws_signing_alg)
         # return final payload
         payload = str(signed_token.payload, "utf-8")
         return json.loads(payload)
@@ -41,9 +39,7 @@ def create_response_payload(token_payload: dict, issuer: str) -> dict:
     resp_payload = dict(
         jti=token_payload["jti"],
         iss=issuer,
-        iat=int(
-            datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).timestamp()
-        ),
+        iat=int(datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).timestamp()),
     )
 
     return resp_payload

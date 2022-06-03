@@ -45,9 +45,7 @@ def test_create_valid_client():
         pytest.fail("Failed to create valid Client")
 
 
-@pytest.mark.parametrize(
-    "header_name", ["Authorization", "authorization", "AuThOrIzAtIoN"]
-)
+@pytest.mark.parametrize("header_name", ["Authorization", "authorization", "AuThOrIzAtIoN"])
 def test_create_invalid_client_bad_headers(header_name):
     headers = {header_name: "value"}
 
@@ -55,9 +53,7 @@ def test_create_invalid_client_bad_headers(header_name):
         Client(**_valid_configuration(), headers=headers)
 
 
-def mock_server_response(
-    _func=None, *, method="GET", url="http://localhost/verify", status=200
-):
+def mock_server_response(_func=None, *, method="GET", url="http://localhost/verify", status=200):
     def decorator(func):
         @responses.activate
         @wraps(func)
@@ -83,9 +79,7 @@ def mock_server_response(
 def mock_request_token(mocker, client, exception=None):
     if exception is None:
         mock_request_token = mocker.patch("eligibility_api.tokens.RequestToken")
-        mocker.patch.object(
-            client, "_tokenize_request", return_value=mock_request_token
-        )
+        mocker.patch.object(client, "_tokenize_request", return_value=mock_request_token)
     else:
         mocker.patch.object(client, "_tokenize_request", side_effect=exception())
 
@@ -93,9 +87,7 @@ def mock_request_token(mocker, client, exception=None):
 def mock_response_token(mocker, client, exception=None):
     if exception is None:
         mock_response_token = mocker.patch("eligibility_api.tokens.ResponseToken")
-        mocker.patch.object(
-            client, "_tokenize_response", return_value=mock_response_token
-        )
+        mocker.patch.object(client, "_tokenize_response", return_value=mock_response_token)
     else:
         mocker.patch.object(client, "_tokenize_request", side_effect=exception())
 
@@ -146,9 +138,7 @@ def test_client_verify_unexpected_response_code(mocker, status):
         client.verify(*_test_data())
 
 
-def mock_server_error(
-    _func=None, *, method="GET", url="http://localhost/verify", exception=RuntimeError
-):
+def mock_server_error(_func=None, *, method="GET", url="http://localhost/verify", exception=RuntimeError):
     def decorator(func):
         @wraps(func)
         @responses.activate
