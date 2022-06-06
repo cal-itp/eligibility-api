@@ -41,9 +41,7 @@ class Client:
         self.server_public_key = server_public_key
 
         if "authorization" in set(k.lower() for k in headers):
-            raise ValueError(
-                '"Authorization" should not be set as an additional header.'
-            )
+            raise ValueError('"Authorization" should not be set as an additional header.')
 
         self.headers = headers
 
@@ -108,9 +106,7 @@ class Client:
             logger.debug("Process eligiblity verification response")
             return self._tokenize_response(r)
         else:
-            logger.warning(
-                f"Unexpected eligibility verification response status code: {r.status_code}"
-            )
+            logger.warning(f"Unexpected eligibility verification response status code: {r.status_code}")
             raise ApiError("Unexpected eligibility verification response")
 
     def verify(self, sub, name, types):

@@ -24,6 +24,9 @@ WORKDIR /home/$USER/src
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
+COPY tests/requirements.txt tests/requirements.txt
+RUN pip install -r tests/requirements.txt
+
 # install docs tooling:
 COPY docs/requirements.txt docs/requirements.txt
 RUN pip install --no-cache-dir -r docs/requirements.txt
