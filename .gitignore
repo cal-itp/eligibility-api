@@ -3,4 +3,4 @@ __pycache__/
 .coverage
 .DS_Store
 build/
-eligibility.egg-info/
+eligibility_api.egg-info/
