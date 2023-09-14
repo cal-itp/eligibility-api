@@ -1,4 +1,4 @@
-FROM python:3.9
+FROM python:3.11
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -14,8 +14,7 @@ USER $USER
 # update PATH for local pip installs
 ENV PATH "$PATH:/home/$USER/.local/bin"
 
-RUN python -m pip install --upgrade pip && \
-    pip install black flake8 pre-commit
+RUN python -m pip install --upgrade pip
 
 # enter src directory
 WORKDIR /home/$USER/src
@@ -25,11 +24,9 @@ COPY docs/requirements.txt docs/requirements.txt
 RUN pip install --no-cache-dir -r docs/requirements.txt
 
 # install python dependencies
-COPY requirements.txt requirements.txt
-RUN pip install -r requirements.txt
-
-COPY tests/requirements.txt tests/requirements.txt
-RUN pip install -r tests/requirements.txt
+COPY eligibility_api eligibility_api
+COPY pyproject.toml pyproject.toml
+RUN pip install -e .[dev,test]
 
 # install pre-commit environments in throwaway Git repository
 # https://stackoverflow.com/a/68758943
