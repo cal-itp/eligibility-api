@@ -103,6 +103,16 @@ def test_create_valid_client():
         pytest.fail("Failed to create valid Client")
 
 
+def test_create_valid_client_timeout():
+    client = Client(**valid_configuration())
+
+    assert client.timeout == 5
+
+    client = Client(**valid_configuration(), timeout=1000)
+
+    assert client.timeout == 1000
+
+
 @pytest.mark.parametrize("header_name", ["Authorization", "authorization", "AuThOrIzAtIoN"])
 def test_create_invalid_client_bad_headers(header_name):
     headers = {header_name: "value"}

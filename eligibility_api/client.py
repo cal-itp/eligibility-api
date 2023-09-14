@@ -29,6 +29,7 @@ class Client:
         jwe_cek_enc,
         server_public_key,
         headers={},
+        timeout=5,
     ):
         self.verify_url = verify_url
 
@@ -44,6 +45,7 @@ class Client:
             raise ValueError('"Authorization" should not be set as an additional header.')
 
         self.headers = headers
+        self.timeout = timeout
 
     def _tokenize_request(self, sub, name, types):
         """Create a request token."""
@@ -91,7 +93,7 @@ class Client:
 
         try:
             logger.debug(f"GET request to {self.verify_url}")
-            r = requests.get(self.verify_url, headers=self._auth_headers(token))
+            r = requests.get(self.verify_url, headers=self._auth_headers(token), timeout=self.timeout)
         except requests.ConnectionError:
             raise ApiError("Connection to verification server failed")
         except requests.Timeout:
