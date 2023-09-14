@@ -20,6 +20,10 @@ RUN python -m pip install --upgrade pip && \
 # enter src directory
 WORKDIR /home/$USER/src
 
+# install docs tooling:
+COPY docs/requirements.txt docs/requirements.txt
+RUN pip install --no-cache-dir -r docs/requirements.txt
+
 # install python dependencies
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
@@ -27,6 +31,11 @@ RUN pip install -r requirements.txt
 COPY tests/requirements.txt tests/requirements.txt
 RUN pip install -r tests/requirements.txt
 
-# install docs tooling:
-COPY docs/requirements.txt docs/requirements.txt
-RUN pip install --no-cache-dir -r docs/requirements.txt
+# install pre-commit environments in throwaway Git repository
+# https://stackoverflow.com/a/68758943
+COPY .pre-commit-config.yaml .
+RUN git init . && \
+    pre-commit install-hooks && \
+    rm -rf .git
+
+CMD ["sleep", "infinity"]
