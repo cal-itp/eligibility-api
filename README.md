@@ -5,10 +5,10 @@
 | Name                             |    Stmts |     Miss |   Branch |   BrPart |   Cover |   Missing |
 |--------------------------------- | -------: | -------: | -------: | -------: | ------: | --------: |
 | eligibility\_api/\_\_init\_\_.py |        0 |        0 |        0 |        0 |    100% |           |
-| eligibility\_api/client.py       |       54 |        2 |       13 |        0 |     97% |    50, 65 |
+| eligibility\_api/client.py       |       55 |        2 |       13 |        0 |     97% |    52, 67 |
 | eligibility\_api/server.py       |       29 |       29 |        0 |        0 |      0% |      1-70 |
 | eligibility\_api/tokens.py       |       69 |       52 |        8 |        0 |     22% |14-17, 42-74, 77, 80, 95-134 |
-|                        **TOTAL** |  **152** |   **83** |   **21** |    **0** | **47%** |           |
+|                        **TOTAL** |  **153** |   **83** |   **21** |    **0** | **48%** |           |
 
 
 ## Setup coverage badge
