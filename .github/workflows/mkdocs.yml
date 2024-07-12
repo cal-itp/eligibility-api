@@ -27,7 +27,7 @@ jobs:
       - name: Download coverage report
         uses: dawidd6/action-download-artifact@v6
         with:
-          workflow: tests-pytest.yml
+          workflow: pytest.yml
           branch: main
           event: push
           name: coverage-report
