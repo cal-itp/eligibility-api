@@ -49,6 +49,14 @@ Based on [*connect2id Nested signed and encrypted JSON Web Token (JWT)*][connect
 1. [Base64url-encode][b64e] JWE
 1. JWE is sent with (request/response)
 
+### Parsing the token
+
+Reverse the steps in [Composing a message](#composing-a-message).
+
+1. Decrypt JWE using recipient's private key (JWS)
+1. Verify the signature on the Signed JWT using sender's public key (JWS)
+1. JWT contains the header and claims payload
+
 ## API Documentation
 
 Below is a description of the HTTP request and response, and request and response payloads. The payloads each make use of
