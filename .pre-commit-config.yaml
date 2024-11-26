@@ -4,13 +4,13 @@ ci:
 
 repos:
   - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v3.4.0
+    rev: v3.6.0
     hooks:
       - id: conventional-pre-commit
         stages: [commit-msg]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v5.0.0
     hooks:
       - id: trailing-whitespace
       - id: mixed-line-ending
@@ -21,7 +21,7 @@ repos:
       - id: check-added-large-files
 
   - repo: https://github.com/psf/black
-    rev: 24.8.0
+    rev: 24.10.0
     hooks:
       - id: black
         types:
@@ -35,13 +35,13 @@ repos:
           - python
 
   - repo: https://github.com/pycqa/bandit
-    rev: 1.7.9
+    rev: 1.7.10
     hooks:
       - id: bandit
         args: ["-ll"]
         files: .py$
 
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.41.0
+    rev: v0.43.0
     hooks:
       - id: markdownlint
