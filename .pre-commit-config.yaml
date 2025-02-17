@@ -4,7 +4,7 @@ ci:
 
 repos:
   - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v3.6.0
+    rev: v4.0.0
     hooks:
       - id: conventional-pre-commit
         stages: [commit-msg]
@@ -21,27 +21,27 @@ repos:
       - id: check-added-large-files
 
   - repo: https://github.com/psf/black
-    rev: 24.10.0
+    rev: 25.1.0
     hooks:
       - id: black
         types:
           - python
 
   - repo: https://github.com/PyCQA/flake8
-    rev: 7.1.1
+    rev: 7.1.2
     hooks:
       - id: flake8
         types:
           - python
 
   - repo: https://github.com/pycqa/bandit
-    rev: 1.7.10
+    rev: 1.8.3
     hooks:
       - id: bandit
         args: ["-ll"]
         files: .py$
 
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.43.0
+    rev: v0.44.0
     hooks:
       - id: markdownlint
