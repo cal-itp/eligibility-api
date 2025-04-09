@@ -1,6 +1,6 @@
 [project]
 name = "eligibility-api"
-version = "2023.09.1"
+version = "2025.04.1"
 description = "Data exchange to verify eligibility for transit benefits."
 readme = "README.md"
 license = { file = "LICENSE" }
