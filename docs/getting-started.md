@@ -29,7 +29,7 @@ The site is served from `http://localhost` at a port dynamically assigned by Doc
 
 The website is automatically rebuilt as changes are made to `docs/` files.
 
-Read more on how to run the docs [here][benefits-docs].
+Read more on how to [run and develop the docs locally][benefits-docs].
 
 [benefits-docs]: https://docs.calitp.org/benefits/getting-started/documentation/
 [docker-dynamic-ports]: https://docs.calitp.org/benefits/getting-started/docker-dynamic-ports
