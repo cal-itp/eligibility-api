@@ -5,7 +5,6 @@ from jwcrypto import common as jwcrypto
 
 from .tokens import RequestToken, ResponseToken, TokenError
 
-
 logger = logging.getLogger(__name__)
 
 
