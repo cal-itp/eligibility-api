@@ -182,7 +182,7 @@ def test_client_verify_unexpected_response_code(mocker, status):
         (requests.ConnectionError, "Connection to verification server failed"),
         (requests.Timeout, "Connection to verification server timed out"),
         (requests.TooManyRedirects, "Too many redirects to verification server"),
-        (requests.HTTPError, ""),
+        (requests.HTTPError, "^$"),
     ],
 )
 def test_client_verify_failed_request(mocker, expected_exception, match):

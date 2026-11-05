@@ -39,7 +39,7 @@ def create_response_payload(token_payload: dict, issuer: str) -> dict:
     resp_payload = dict(
         jti=token_payload["jti"],
         iss=issuer,
-        iat=int(datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).timestamp()),
+        iat=int(datetime.datetime.now(datetime.UTC).timestamp()),
     )
 
     return resp_payload
