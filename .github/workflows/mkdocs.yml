@@ -22,10 +22,10 @@ jobs:
     if: github.event.workflow_run == null || github.event.workflow_run.conclusion == 'success'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Download coverage report
-        uses: dawidd6/action-download-artifact@v7
+        uses: dawidd6/action-download-artifact@a92c7ae74cf1df8810783758581e485ac3aaa309  # v28
         with:
           workflow: pytest.yml
           branch: main
@@ -34,7 +34,7 @@ jobs:
           path: docs/tests/coverage
 
       - name: Deploy docs
-        uses: mhausenblas/mkdocs-deploy-gh-pages@master
+        uses: mhausenblas/mkdocs-deploy-gh-pages@a31c6b13a80e4a4fbb525eeb7a2a78253bb15fa5 # does not do versioned releases
         env:
           REQUIREMENTS: docs/requirements.txt
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
